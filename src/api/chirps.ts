@@ -15,7 +15,17 @@ export async function handlerChirpsValidate(req: Request, res: Response) {
     return;
   }
 
+  // check for profane words
+  const profaneWords = ["kerfuffle", "sharbert", "fornax"];
+  const words = params.body.split(" ");
+
+  for (let i = 0; i < words.length; i++) {
+    if (profaneWords.includes(words[i].toLowerCase())) {
+      words[i] = "****";
+    }
+  }
+
   respondWithJSON(res, 200, {
-    valid: true,
+    cleanedBody: words.join(" "),
   });
 }
