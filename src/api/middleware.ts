@@ -3,10 +3,10 @@ import { config } from "../config.js";
 import { respondWithError } from "./json.js";
 import {
   BadRequestError,
-  ForbiddenError,
   NotFoundError,
-  UnauthorizedError,
-} from "../error.js";
+  UserForbiddenError,
+  UserNotAuthenticatedError,
+} from "./errors.js";
 
 export function middlewareLogResponse(
   req: Request,
@@ -41,18 +41,26 @@ export function errorMiddleware(
   res: Response,
   __: NextFunction
 ) {
-  if (err instanceof BadRequestError) {
-    respondWithError(res, 400, err.message);
-  } else if (err instanceof UnauthorizedError) {
-    respondWithError(res, 401, err.message);
-  } else if (err instanceof ForbiddenError) {
-    respondWithError(res, 403, err.message);
-  } else if (err instanceof NotFoundError) {
-    respondWithError(res, 404, err.message);
-  } else {
-    let statusCode = 500;
-    let message = "Something went wrong on our end";
+  let statusCode = 400;
+  let message = "Something went wrong on our end";
 
-    respondWithError(res, statusCode, message);
+  if (err instanceof BadRequestError) {
+    statusCode = 400;
+    message = err.message;
+  } else if (err instanceof UserNotAuthenticatedError) {
+    statusCode = 401;
+    message = err.message;
+  } else if (err instanceof UserForbiddenError) {
+    statusCode = 403;
+    message = err.message;
+  } else if (err instanceof NotFoundError) {
+    statusCode = 404;
+    message = err.message;
   }
+
+  if (statusCode >= 500) {
+    console.log(err.message);
+  }
+
+  respondWithError(res, statusCode, message);
 }
