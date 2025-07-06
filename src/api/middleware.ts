@@ -27,11 +27,11 @@ export function middlewareLogResponse(
 }
 
 export function middlewareMetricsInc(
-  req: Request,
-  res: Response,
+  _: Request,
+  __: Response,
   next: NextFunction
 ) {
-  config.fileserverHits++;
+  config.api.fileServerHits++;
   next();
 }
 
