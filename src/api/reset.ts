@@ -5,12 +5,14 @@ import { UserForbiddenError } from "./errors.js";
 
 export async function handlerReset(_: Request, res: Response) {
   if (config.api.platform !== "dev") {
-    throw new UserForbiddenError("forbidden");
+    console.log(config.api.platform);
+    throw new UserForbiddenError(
+      "Reset is only allowed in the dev environment."
+    );
   }
+  config.api.fileServerHits = 0;
   await deleteAllUsers();
-  res.write("all users deleted");
+
+  res.write("Hits reset to 0");
   res.end();
-  // config.api.fileServerHits = 0;
-  // res.write("Hits reset to 0");
-  // res.end();
 }
