@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 
-import { respondWithJSON } from "./json.js";
+import { respondWithError, respondWithJSON } from "./json.js";
 import { BadRequestError } from "./errors.js";
-import { createChirp, getAllChirps } from "../db/queries/chirps.js";
+import { createChirp, getAllChirps, getChirp } from "../db/queries/chirps.js";
 
 export async function handlerCreateChirp(req: Request, res: Response) {
   type parameters = {
@@ -54,4 +54,20 @@ export async function handlerCreateChirp(req: Request, res: Response) {
 export async function handlerGetAllChirps(req: Request, res: Response) {
   const chirps = await getAllChirps();
   respondWithJSON(res, 200, chirps);
+}
+
+export async function handlerGetChirp(req: Request, res: Response) {
+  const chirp = await getChirp(req.params.chirpID);
+
+  if (chirp !== null) {
+    respondWithJSON(res, 200, {
+      id: chirp.id,
+      createdAt: chirp.createdAt,
+      updatedAt: chirp.updatedAt,
+      body: chirp.body,
+      userId: chirp.userId,
+    });
+  } else {
+    respondWithError(res, 404, "Chirp not found");
+  }
 }
