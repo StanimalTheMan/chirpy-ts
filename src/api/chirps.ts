@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
 import { respondWithError, respondWithJSON } from "./json.js";
-import { BadRequestError } from "./errors.js";
+import { BadRequestError, NotFoundError } from "./errors.js";
 import { createChirp, getAllChirps, getChirp } from "../db/queries/chirps.js";
 
 export async function handlerCreateChirp(req: Request, res: Response) {
@@ -12,43 +12,37 @@ export async function handlerCreateChirp(req: Request, res: Response) {
 
   const params: parameters = req.body;
 
-  if (!params.body || !params.userId) {
-    throw new BadRequestError("Missing required fields");
-  }
+  const cleaned = validateChirp(params.body);
+  const chirp = await createChirp({ body: cleaned, userId: params.userId });
 
+  respondWithJSON(res, 201, chirp);
+}
+
+function validateChirp(body: string) {
   const maxChirpLength = 140;
-  if (params.body.length > maxChirpLength) {
+  if (body.length > maxChirpLength) {
     throw new BadRequestError(
-      `Chirp is too long. Max length is ${maxChirpLength}`
+      `Chirp is too long.  Max length is ${maxChirpLength}`
     );
   }
 
-  // check for profane words
-  const profaneWords = ["kerfuffle", "sharbert", "fornax"];
-  const words = params.body.split(" ");
+  const badWords = ["kerfuffle", "sharbert", "fornax"];
+  return getCleanedBody(body, badWords);
+}
+
+function getCleanedBody(body: string, badWords: string[]) {
+  const words = body.split(" ");
 
   for (let i = 0; i < words.length; i++) {
-    if (profaneWords.includes(words[i].toLowerCase())) {
+    const word = words[i];
+    const loweredWord = word.toLowerCase();
+    if (badWords.includes(loweredWord)) {
       words[i] = "****";
     }
   }
 
-  const createdChirp = await createChirp({
-    body: params.body,
-    userId: params.userId,
-  });
-
-  if (!createdChirp) {
-    throw new Error("Could not create user");
-  }
-
-  respondWithJSON(res, 201, {
-    id: createdChirp.id,
-    createdAt: createdChirp.createdAt,
-    updatedAt: createdChirp.updatedAt,
-    body: createdChirp.body,
-    userId: createdChirp.userId,
-  });
+  const cleaned = words.join(" ");
+  return cleaned;
 }
 
 export async function handlerGetAllChirps(req: Request, res: Response) {
@@ -57,17 +51,12 @@ export async function handlerGetAllChirps(req: Request, res: Response) {
 }
 
 export async function handlerGetChirp(req: Request, res: Response) {
-  const chirp = await getChirp(req.params.chirpID);
+  const { chirpId } = req.params;
 
-  if (chirp !== null) {
-    respondWithJSON(res, 200, {
-      id: chirp.id,
-      createdAt: chirp.createdAt,
-      updatedAt: chirp.updatedAt,
-      body: chirp.body,
-      userId: chirp.userId,
-    });
-  } else {
-    respondWithError(res, 404, "Chirp not found");
+  const chirp = await getChirp(chirpId);
+  if (!chirp) {
+    throw new NotFoundError(`Chirp with chirpId: ${chirpId} not found`);
   }
+
+  respondWithJSON(res, 200, chirp);
 }

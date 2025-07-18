@@ -19,5 +19,8 @@ export async function getAllChirps() {
 
 export async function getChirp(chirpId: string) {
   const result = await db.select().from(chirps).where(eq(chirps.id, chirpId));
+  if (result.length === 0) {
+    return;
+  }
   return result[0];
 }
